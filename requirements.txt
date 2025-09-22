@@ -1,8 +1,8 @@
 Flask==2.3.3
 flask-cors
-google-generativeai==0.0.6
-python-dotenv==1.0.0
-requests==2.31.0
-Jinja2==3.1.2
-MarkupSafe==3.0.2
-gunicorn==21.2.0
+google-generativeai
+python-dotenv
+requests
+Jinja2
+MarkupSafe
+gunicorn
