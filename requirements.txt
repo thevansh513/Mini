@@ -1,5 +1,5 @@
 Flask==2.3.3
-flask-cors==3.1.10
+flask-cors
 google-generativeai==0.0.6
 python-dotenv==1.0.0
 requests==2.31.0
