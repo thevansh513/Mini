@@ -129,155 +129,117 @@
         </div>
     </div>
 </div>
-</body>
-</htmlssageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const typingIndicator = document.getElementById('typingIndicator');
 
-        // Auto-focus input
-        messageInput.focus();
+<script>
+const chatContainer = document.getElementById('chatContainer');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const typingIndicator = document.getElementById('typingIndicator');
 
-        function addMessage(message, isUser = false, timestamp = null) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = `message-bubble ${isUser ? 'user-message' : 'bot-message'}`;
-            
-            // Use textContent to prevent XSS
-            bubbleDiv.textContent = message;
-            
-            // Add timestamp
-            if (timestamp || !isUser) {
-                const timeDiv = document.createElement('div');
-                timeDiv.className = 'message-time';
-                timeDiv.textContent = timestamp || new Date().toLocaleTimeString();
-                bubbleDiv.appendChild(timeDiv);
-            }
-            
-            messageDiv.appendChild(bubbleDiv);
-            chatContainer.appendChild(messageDiv);
-            
-            // Remove welcome message if it exists
-            const welcomeMsg = chatContainer.querySelector('.welcome-message');
-            if (welcomeMsg && !isUser) {
-                welcomeMsg.remove();
-            }
-            
-            scrollToBottom();
-        }
+// Auto-focus input
+messageInput.focus();
 
-        function showTyping() {
-            typingIndicator.style.display = 'flex';
-            scrollToBottom();
-        }
+// Add a message to chat
+function addMessage(message, isUser = false, timestamp = null) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message';
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.className = `message-bubble ${isUser ? 'user-message' : 'bot-message'}`;
+    bubbleDiv.textContent = message;
+    if (timestamp || !isUser) {
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        timeDiv.textContent = timestamp || new Date().toLocaleTimeString();
+        bubbleDiv.appendChild(timeDiv);
+    }
+    messageDiv.appendChild(bubbleDiv);
+    chatContainer.appendChild(messageDiv);
 
-        function hideTyping() {
-            typingIndicator.style.display = 'none';
-        }
+    // Remove welcome message if present
+    const welcomeMsg = chatContainer.querySelector('.welcome-message');
+    if (welcomeMsg && !isUser) welcomeMsg.remove();
 
-        function scrollToBottom() {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+    scrollToBottom();
+}
 
-        function setLoading(loading) {
-            sendBtn.disabled = loading;
-            messageInput.disabled = loading;
-            
-            if (loading) {
-                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                showTyping();
-            } else {
-                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
-                hideTyping();
-            }
-        }
+// Show typing indicator
+function showTyping() { typingIndicator.style.display = 'flex'; scrollToBottom(); }
+function hideTyping() { typingIndicator.style.display = 'none'; }
+function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
 
-        async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message || sendBtn.disabled) return;
+// Toggle send button & input loading state
+function setLoading(loading) {
+    sendBtn.disabled = loading;
+    messageInput.disabled = loading;
+    sendBtn.innerHTML = loading
+        ? '<i class="fas fa-spinner fa-spin"></i>'
+        : '<i class="fas fa-paper-plane"></i>';
+    loading ? showTyping() : hideTyping();
+}
 
-            // Add user message
-            addMessage(message, true);
-            messageInput.value = '';
-            setLoading(true);
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    addMessage(data.response);
-                } else {
-                    addMessage('❌ Error: ' + (data.error || 'Unknown error occurred'));
-                }
-            } catch (error) {
-                addMessage('❌ Network error: Failed to send message. Please check your connection and try again.');
-                console.error('Error:', error);
-            } finally {
-                setLoading(false);
-                messageInput.focus();
-            }
-        }
-
-        async function clearChat() {
-            if (!confirm('Are you sure you want to clear the conversation?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/clear', { method: 'POST' });
-                if (response.ok) {
-                    chatContainer.innerHTML = `
-                        <div class="welcome-message">
-                            <i class="fas fa-sparkles"></i>
-                            Welcome back! I'm ready for a new conversation. How can I help you?
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error clearing chat:', error);
-                alert('Failed to clear chat. Please try again.');
-            }
-        }
-
-        function toggleVoice() {
-            alert('Voice input feature coming soon! 🎤');
-        }
-
-        // Enter key to send message
-        messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
+// Send user message to server
+async function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message || sendBtn.disabled) return;
+    addMessage(message, true);
+    messageInput.value = '';
+    setLoading(true);
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
         });
+        const data = await response.json();
+        if (data.success) addMessage(data.response);
+        else addMessage('❌ Error: ' + (data.error || 'Unknown error occurred'));
+    } catch (error) {
+        addMessage('❌ Network error: Failed to send message. Please check your connection.');
+        console.error('Error:', error);
+    } finally { setLoading(false); messageInput.focus(); }
+}
 
-        // Character counter
-        messageInput.addEventListener('input', function() {
-            const remaining = 10000 - this.value.length;
-            if (remaining < 100) {
-                this.style.borderColor = remaining < 50 ? '#ea4335' : '#ff9800';
-            } else {
-                this.style.borderColor = '#e1e5e9';
-            }
-        });
-
-        // Auto-resize input on mobile
-        if (window.innerWidth <= 768) {
-            messageInput.addEventListener('focus', function() {
-                setTimeout(() => {
-                    document.body.scrollTop = document.body.scrollHeight;
-                }, 300);
-            });
+// Clear chat
+async function clearChat() {
+    if (!confirm('Are you sure you want to clear the conversation?')) return;
+    try {
+        const response = await fetch('/clear', { method: 'POST' });
+        if (response.ok) {
+            chatContainer.innerHTML = `
+                <div class="welcome-message">
+                    <i class="fas fa-sparkles"></i>
+                    Welcome back! I'm ready for a new conversation. How can I help you?
+                </div>
+            `;
         }
-    </script>
+    } catch (error) {
+        console.error('Error clearing chat:', error);
+        alert('Failed to clear chat. Please try again.');
+    }
+}
+
+// Voice toggle
+function toggleVoice() { alert('Voice input feature coming soon! 🎤'); }
+
+// Enter key sends message
+messageInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// Character counter & border warning
+messageInput.addEventListener('input', function() {
+    const remaining = 10000 - this.value.length;
+    this.style.borderColor = remaining < 100
+        ? remaining < 50 ? '#ea4335' : '#ff9800'
+        : '#e1e5e9';
+});
+
+// Auto-scroll input focus on mobile
+if (window.innerWidth <= 768) {
+    messageInput.addEventListener('focus', function() {
+        setTimeout(() => { document.body.scrollTop = document.body.scrollHeight; }, 300);
+    });
+}
+</script>
 </body>
-</html>
+    </html>
